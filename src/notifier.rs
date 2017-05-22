@@ -6,6 +6,7 @@ use config::Config;
 use notice::Notice;
 use sync_sender::SyncSender;
 use async_sender::AsyncSender;
+use error::Result;
 
 pub struct Notifier {
     sync_sender: SyncSender,
@@ -33,13 +34,13 @@ impl Notifier {
         self.async_sender.send(notice);
     }
 
-    pub fn notify_sync<E: Error>(&self, error: E) -> Value {
+    pub fn notify_sync<E: Error>(&self, error: E) -> Result<Value> {
         if self.closed {
             panic!("attempted to send through a closed Airbrake notifier");
         }
 
         let notice = Notice::new(&self.config, error);
-        self.sync_sender.send(notice)
+        self.sync_sender.send(&notice)
     }
 
     pub fn close(&mut self) {

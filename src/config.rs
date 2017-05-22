@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 #[derive(Debug, Clone)]
 pub struct Config {
     pub project_id: String,
@@ -10,6 +12,8 @@ pub struct Config {
     pub component: Option<String>,
     pub os: Option<String>,
     pub hostname: Option<String>,
+    pub max_retry: Option<u32>,
+    pub retry_timeout: Option<Duration>,
 }
 
 impl Config {
@@ -25,6 +29,8 @@ impl Config {
             component: None,
             os: None,
             hostname: None,
+            max_retry: None,
+            retry_timeout: None,
         }
     }
 

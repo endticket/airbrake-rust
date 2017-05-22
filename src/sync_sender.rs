@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::{thread, time};
 
 use serde_json;
 use serde_json::Value;
@@ -11,11 +12,14 @@ use hyper_sync_rustls::TlsClient;
 
 use config::Config;
 use notice::Notice;
+use error::{Result, ErrorKind};
 
 #[derive(Debug)]
 pub struct SyncSender {
     client: Client,
     endpoint: String,
+    max_retry: Option<u32>,
+    retry_timeout: Option<time::Duration>,
 }
 
 impl SyncSender {
@@ -48,24 +52,52 @@ impl SyncSender {
         SyncSender {
             client: client,
             endpoint: config.endpoint(),
+            max_retry: config.max_retry,
+            retry_timeout: config.retry_timeout,
         }
     }
 
-    pub fn send(&self, notice: Notice) -> Value {
-        let uri = Url::parse(&self.endpoint).ok().expect("malformed URL");
+    fn send_once(&self, notice: &Notice) -> Result<Value> {
+        let uri = try!(Url::parse(&self.endpoint));
 
         let payload = notice.to_json();
         let bytes = payload.as_bytes();
 
         debug!("**Airbrake: sending {}", payload);
 
-        let response = self.client.post(uri)
+        let mut response = try!(self.client.post(uri)
             .header(ContentType::json())
             .body(Body::BufBody(bytes, bytes.len()))
-            .send();
+            .send());
 
         let mut buffer = String::new();
-        response.unwrap().read_to_string(&mut buffer).unwrap();
-        serde_json::from_str(&buffer).unwrap()
+        try!(response.read_to_string(&mut buffer));
+        //try!(serde_json::from_str(&buffer))
+        match serde_json::from_str(&buffer) {
+            Ok(res) => Ok(res),
+            Err(_err) => Err(ErrorKind::JsonError.into())
+        }
+        
+    }
+
+    pub fn send(&self, notice: &Notice) -> Result<Value> {
+        
+        let mut last_res = self.send_once(notice);
+        
+        let max_retry = self.max_retry.unwrap_or(0);
+        
+        if max_retry != 0 {
+            let mut retry_num = 0;
+            let timeout = self.retry_timeout.unwrap_or(time::Duration::from_secs(1));
+            
+            while last_res.is_err() && retry_num < max_retry {
+                error!("Airbrake Notify failed {} time(s), retrying after {:?}", retry_num+1, timeout);
+                thread::sleep(timeout);
+                retry_num += 1;
+                last_res =  self.send_once(notice);
+            }
+        }
+        
+        last_res
     }
 }

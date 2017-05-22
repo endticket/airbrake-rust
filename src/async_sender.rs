@@ -59,7 +59,7 @@ impl AsyncSender {
                     match message {
                         Ok(Some(notice)) => {
                             debug!("**Airbrake: sending {:?}", notice);
-                            sync_sender.send(notice);
+                            let _res = sync_sender.send(&notice);
                         },
                         Ok(None) | Err(..) => {
                             debug!("**Airbrake: terminating thread {:?}", thread::current());

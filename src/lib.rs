@@ -163,13 +163,15 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate log;
-
+#[macro_use]
+extern crate error_chain;
 
 mod config;
 mod notifier;
 mod notice;
 mod async_sender;
 mod sync_sender;
+mod error;
 
 use notifier::Notifier;
 use config::Config;
