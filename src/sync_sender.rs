@@ -12,7 +12,7 @@ use hyper_sync_rustls::TlsClient;
 
 use config::Config;
 use notice::Notice;
-use error::{Result, ErrorKind};
+use error::Result;
 
 #[derive(Debug)]
 pub struct SyncSender {
@@ -72,18 +72,12 @@ impl SyncSender {
 
         let mut buffer = String::new();
         try!(response.read_to_string(&mut buffer));
-        //try!(serde_json::from_str(&buffer))
-        match serde_json::from_str(&buffer) {
-            Ok(res) => Ok(res),
-            Err(_err) => Err(ErrorKind::JsonError.into())
-        }
-        
+        let res = try!(serde_json::from_str(&buffer));
+        Ok(res)
     }
 
     pub fn send(&self, notice: &Notice) -> Result<Value> {
-        
         let mut last_res = self.send_once(notice);
-        
         let max_retry = self.max_retry.unwrap_or(0);
         
         if max_retry != 0 {

@@ -37,7 +37,7 @@ pub struct AirbrakeError {
 }
 
 impl Notice {
-    pub fn new<E: Error>(config: &Config, error: E) -> Notice {
+    pub fn new<E: Error>(config: &Config, error: &E) -> Notice {
         Notice {
             errors: vec![
                 AirbrakeError {

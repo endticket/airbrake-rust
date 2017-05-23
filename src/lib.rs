@@ -167,7 +167,7 @@ extern crate log;
 extern crate error_chain;
 
 mod config;
-mod notifier;
+pub mod notifier;
 mod notice;
 mod async_sender;
 mod sync_sender;

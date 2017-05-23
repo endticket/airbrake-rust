@@ -25,7 +25,7 @@ impl Notifier {
         }
     }
 
-    pub fn notify<E: Error>(&self, error: E) {
+    pub fn notify<E: Error>(&self, error: &E) {
         if self.closed {
             panic!("attempted to send through a closed Airbrake notifier");
         }
@@ -34,7 +34,7 @@ impl Notifier {
         self.async_sender.send(notice);
     }
 
-    pub fn notify_sync<E: Error>(&self, error: E) -> Result<Value> {
+    pub fn notify_sync<E: Error>(&self, error: &E) -> Result<Value> {
         if self.closed {
             panic!("attempted to send through a closed Airbrake notifier");
         }
