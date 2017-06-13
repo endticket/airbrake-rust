@@ -4,7 +4,9 @@ use serde_json;
 use serde_json::Value;
 use hyper::Url;
 use hyper::header::ContentType;
-use hyper::client::{Client, Body};
+use hyper::client::{Client, Body, ProxyConfig};
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
 
 use config::Config;
 use notice::Notice;
@@ -17,8 +19,10 @@ pub struct SyncSender {
 
 impl SyncSender {
     pub fn new(config: &Config) -> SyncSender {
+        let ssl = NativeTlsClient::new().expect("Native TLS init failed");
+        let connector = HttpsConnector::new(ssl);
         let client = if config.proxy.is_empty() {
-            Client::new()
+            Client::with_connector(connector)
         } else {
             let mut proxy = config.proxy.clone();
             let mut port = 80;
@@ -30,7 +34,13 @@ impl SyncSender {
                 });
                 proxy.truncate(colon);
             }
-            Client::with_http_proxy(proxy, port)
+
+            // TODO why is this has to be reinitialized?
+            let ssl2 = NativeTlsClient::new().expect("Native TLS init failed");
+
+            Client::with_proxy_config(
+                ProxyConfig::new("http", proxy, port, connector, ssl2)
+            )
         };
 
         SyncSender {

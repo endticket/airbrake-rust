@@ -156,6 +156,7 @@
 //! [json-object]: https://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/enum.Json.html
 
 extern crate hyper;
+extern crate hyper_native_tls;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
