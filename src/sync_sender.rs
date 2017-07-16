@@ -4,9 +4,10 @@ use serde_json;
 use serde_json::Value;
 use hyper::Url;
 use hyper::header::ContentType;
-use hyper::client::{Client, Body, ProxyConfig};
+//use hyper::client::{Client, Body, ProxyConfig};
+use hyper::client::{Client, Body};
 use hyper::net::HttpsConnector;
-use hyper_native_tls::NativeTlsClient;
+use hyper_sync_rustls::TlsClient;
 
 use config::Config;
 use notice::Notice;
@@ -19,7 +20,7 @@ pub struct SyncSender {
 
 impl SyncSender {
     pub fn new(config: &Config) -> SyncSender {
-        let ssl = NativeTlsClient::new().expect("Native TLS init failed");
+        let ssl = TlsClient::new();
         let connector = HttpsConnector::new(ssl);
         let client = if config.proxy.is_empty() {
             Client::with_connector(connector)
@@ -35,12 +36,13 @@ impl SyncSender {
                 proxy.truncate(colon);
             }
 
-            // TODO why is this has to be reinitialized?
-            let ssl2 = NativeTlsClient::new().expect("Native TLS init failed");
+            Client::with_http_proxy(proxy, port)
+            // why is this failing with hyper-sync-rustls?
+            // let ssl2 = TlsClient::new();
 
-            Client::with_proxy_config(
-                ProxyConfig::new("http", proxy, port, connector, ssl2)
-            )
+            //Client::with_proxy_config(
+            //    ProxyConfig::new("http", proxy, port, connector, ssl2)
+            //)
         };
 
         SyncSender {
